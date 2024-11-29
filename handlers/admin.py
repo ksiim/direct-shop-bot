@@ -171,7 +171,7 @@ async def topic_callback(callback: CallbackQuery, state: FSMContext):
     topic_id = int(callback.data.split(':')[1])
     await state.update_data(topic_id=topic_id)
 
-    await save_good_details_and_notify(callback.message, state)
+    await save_good_details_and_notify(callback, state)
 
 async def save_good_details_and_notify(message: Message, state: FSMContext):
     data = await state.get_data()
@@ -186,11 +186,20 @@ async def save_good_details_and_notify(message: Message, state: FSMContext):
         discount=data['discount']
     )
 
+    caption = await generate_good_text(good)
+    if len(caption) > 1020:
+        await bot.send_message(
+            chat_id=message.from_user.id,
+            text=too_long_description_text
+        )
+        await asyncio.sleep(3)
+        return await send_admin_panel(telegram_id=message.from_user.id)
+    
     if CHANNEL_TYPE == 'channel':
         good_message = await bot.send_photo(
             chat_id=CHANNEL_ID,
             photo=good.photo,
-            caption=await generate_good_text(good),
+            caption=caption,
             reply_markup=await generate_buy_markup(good.id)
         )
     else:
@@ -198,13 +207,14 @@ async def save_good_details_and_notify(message: Message, state: FSMContext):
             chat_id=CHANNEL_ID,
             message_thread_id=data['topic_id'],
             photo=good.photo,
-            caption=await generate_good_text(good),
+            caption=caption,
             reply_markup=await generate_buy_markup(good.id)
         )
 
     await Orm.update_good_message_id(good.id, good_message.message_id)
 
-    await message.answer(
+    await bot.send_message(
+        chat_id=message.from_user.id,
         text=good_added_confirmation,
     )
 
