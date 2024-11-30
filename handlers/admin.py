@@ -358,6 +358,10 @@ async def change_delivery_point_address_handler(message: Message, state: FSMCont
 async def confirm_payment_callback(callback: CallbackQuery, state: FSMContext):
     order_id = int(callback.data.split(':')[1])
     order = await Orm.get_order_by_id(order_id)
+    
+    good = await Orm.get_good_by_id(order.good_id)
+    good_count = good.count - order.count
+    await Orm.update_good_count(order.good_id, good_count)
 
     await callback.message.delete_reply_markup()
     await callback.message.answer(

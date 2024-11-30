@@ -9,6 +9,13 @@ from sqlalchemy import insert, inspect, or_, select, text, update
 class Orm:
     
     @staticmethod
+    async def update_good_count(good_id, count):
+        async with Session() as session:
+            query = update(Good).where(Good.id == good_id).values(count=count)
+            await session.execute(query)
+            await session.commit()
+    
+    @staticmethod
     async def delete_topic_by_id(topic_id):
         async with Session() as session:
             query = select(Topic).where(Topic.id == topic_id)
